@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 set -m
 
 /entrypoint.sh couchbase-server &
@@ -16,8 +17,11 @@ curl -v http://127.0.0.1:8091/settings/web -d port=8091 -d username=Administrato
 # Setup Memory Optimized Indexes
 curl -i -u Administrator:password -X POST http://127.0.0.1:8091/settings/indexes -d 'storageMode=memory_optimized'
 
+# Setup the host name for better name resolution
+curl -i -u Administrator:password -X POST http://127.0.0.1:8091/node/controller/rename -d hostname=$HOSTNAME
+
 # Load travel-sample bucket
-curl -v -u Administrator:password -X POST http://127.0.0.1:8091/sampleBuckets/install -d '["travel-sample"]'
+#curl -v -u Administrator:password -X POST http://127.0.0.1:8091/sampleBuckets/install -d '["travel-sample"]'
 
 if [[ "$HOSTNAME" == *-0 ]]; then
   TYPE="MASTER"
@@ -34,9 +38,9 @@ if [ "$TYPE" = "WORKER" ]; then
 
   echo "Auto Rebalance: $AUTO_REBALANCE"
   if [ "$AUTO_REBALANCE" = "true" ]; then
-    couchbase-cli rebalance --cluster=$COUCHBASE_MASTER:8091 --user=Administrator --password=password --server-add=$IP --server-add-username=Administrator --server-add-password=password
+    couchbase-cli rebalance --cluster=$COUCHBASE_MASTER:8091 --user=Administrator --password=password --server-add=$HOSTNAME --server-add-username=Administrator --server-add-password=password
   else
-    couchbase-cli server-add --cluster=$COUCHBASE_MASTER:8091 --user=Administrator --password=password --server-add=$IP --server-add-username=Administrator --server-add-password=password
+    couchbase-cli server-add --cluster=$COUCHBASE_MASTER:8091 --user=Administrator --password=password --server-add=$HOSTNAME --server-add-username=Administrator --server-add-password=password
   fi;
 fi;
 
